@@ -122,6 +122,8 @@ These insights will guide the feature engineering and modeling stages of the pro
 ---
 
 # Project Structure
+
+```
 Group Project/
 │
 ├── Data/
@@ -132,6 +134,7 @@ Group Project/
 │ └── job_postings.db
 │
 └── README.md
+```
 
 ---
 
