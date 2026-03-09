@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Job Fraud Detector</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --blue:       #0a66c2;
+    --blue-dark:  #004182;
+    --blue-light: #e8f0fe;
+    --blue-mid:   #cce0ff;
+    --white:      #ffffff;
+    --bg:         #f3f2ee;
+    --surface:    #ffffff;
+    --border:     #dce6f0;
+    --text:       #191919;
+    --muted:      #666666;
+    --success:    #057642;
+    --success-bg: #e6f4ea;
+    --danger:     #b92525;
+    --danger-bg:  #fdecea;
+    --warn:       #915907;
+    --warn-bg:    #fff3cd;
+    --shadow:     0 2px 8px rgba(0,0,0,0.08);
+    --shadow-lg:  0 4px 20px rgba(0,0,0,0.12);
+    --radius:     10px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* ── Top Nav ── */
+  .navbar {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow);
+  }
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+  .navbar-logo {
+    width: 34px; height: 34px;
+    background: var(--blue);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+    font-family: 'Source Serif 4', serif;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: -0.5px;
+  }
+  .navbar-title {
+    font-family: 'Source Serif 4', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .navbar-title span { color: var(--blue); }
+  .navbar-badge {
+    background: var(--blue-light);
+    color: var(--blue);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--blue-mid);
+  }
+
+  /* ── Layout ── */
+  .page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 720px) {
+    .page { grid-template-columns: 1fr; }
+    .sidebar { order: -1; }
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-header h2 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+  .card-header p { font-size: 13px; color: var(--muted); }
+  .card-body { padding: 20px 22px; }
+
+  /* ── Form Elements ── */
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .field label span { color: var(--muted); font-weight: 400; }
+
+  select, textarea {
+    width: 100%;
+    background: var(--white);
+    border: 1.5px solid #c8d8e8;
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    appearance: none;
+  }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%230a66c2' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  select:focus, textarea:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(10,102,194,0.12);
+  }
+  textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 500px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* ── Toggles ── */
+  .toggle-group {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 14px 16px;
+    background: var(--blue-light);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border: 1px solid var(--blue-mid);
+  }
+  .toggle {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    user-select: none;
+  }
+  .toggle input { display: none; }
+  .knob {
+    width: 36px; height: 20px;
+    background: #bcc8d4;
+    border-radius: 10px;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .knob::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 14px; height: 14px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle input:checked + .knob { background: var(--blue); }
+  .toggle input:checked + .knob::after { transform: translateX(16px); }
+
+  /* ── Button ── */
+  .btn-primary {
+    width: 100%;
+    padding: 12px;
+    background: var(--blue);
+    color: white;
+    border: none;
+    border-radius: 24px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+    box-shadow: 0 2px 8px rgba(10,102,194,0.3);
+    margin-top: 4px;
+  }
+  .btn-primary:hover { background: var(--blue-dark); box-shadow: 0 4px 14px rgba(10,102,194,0.4); transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { background: #9bb8d4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* ── Loading ── */
+  .loading { display: none; text-align: center; padding: 28px; }
+  .loading.on { display: block; }
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--blue-mid);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+    margin: 0 auto 12px;
+  }
+  .loading p { font-size: 13px; color: var(--muted); }
+
+  /* ── Result ── */
+  .result { display: none; }
+  .result.on { display: block; animation: fadeUp 0.35s ease both; }
+
+  .verdict-card {
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    border: 1.5px solid;
+  }
+  .verdict-card.fraud { background: var(--danger-bg); border-color: #f5c6cb; }
+  .verdict-card.legit { background: var(--success-bg); border-color: #b7dfca; }
+
+  .verdict-icon {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .fraud .verdict-icon { background: rgba(185,37,37,0.12); }
+  .legit .verdict-icon { background: rgba(5,118,66,0.12); }
+
+  .verdict-text h3 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .fraud .verdict-text h3 { color: var(--danger); }
+  .legit .verdict-text h3 { color: var(--success); }
+  .verdict-text p { font-size: 12px; color: var(--muted); }
+
+  /* ── Confidence Bar ── */
+  .conf-section {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .conf-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .conf-header span:first-child { font-size: 13px; font-weight: 600; color: var(--text); }
+  .conf-pct { font-size: 20px; font-weight: 700; font-family: 'Source Serif 4', serif; }
+  .fraud-pct { color: var(--danger); }
+  .legit-pct { color: var(--success); }
+  .bar-bg { background: var(--border); border-radius: 4px; height: 8px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.9s cubic-bezier(0.4,0,0.2,1); }
+  .bar-fraud { background: linear-gradient(90deg, #e57373, var(--danger)); }
+  .bar-legit { background: linear-gradient(90deg, #66bb6a, var(--success)); }
+
+  /* ── Signals ── */
+  .section-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .signals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  @media (max-width: 480px) { .signals-grid { grid-template-columns: 1fr; } }
+  .signal-chip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid;
+  }
+  .signal-chip.ok   { background: var(--success-bg); border-color: #b7dfca; color: var(--success); }
+  .signal-chip.bad  { background: var(--danger-bg);  border-color: #f5c6cb; color: var(--danger);  }
+  .signal-chip.warn { background: var(--warn-bg);    border-color: #ffd97a; color: var(--warn);    }
+  .signal-chip .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .dot-ok   { background: var(--success); }
+  .dot-bad  { background: var(--danger); }
+  .dot-warn { background: var(--warn); }
+
+  /* ── Red Flags ── */
+  .redflag-section {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .redflag-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--danger);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .redflag-count {
+    background: var(--danger);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+  }
+  .redflag-list { display: flex; flex-direction: column; gap: 6px; }
+  .redflag-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    background: var(--danger-bg);
+    border: 1px solid #f5c6cb;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--danger);
+  }
+  .redflag-item svg { flex-shrink: 0; }
+
+  /* ── Sidebar ── */
+  .sidebar { display: flex; flex-direction: column; gap: 16px; }
+  .tip-card { padding: 18px 20px; }
+  .tip-card h4 {
+    font-family: 'Source Serif 4', serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tip-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+  .tip-list li {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.5;
+  }
+  .tip-list li::before {
+    content: '•';
+    color: var(--blue);
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-box {
+    background: var(--blue-light);
+    border: 1px solid var(--blue-mid);
+    border-radius: 8px;
+    padding: 12px 14px;
+    text-align: center;
+  }
+  .stat-box .num {
+    font-family: 'Source Serif 4', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--blue);
+    display: block;
+  }
+  .stat-box .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .note-box {
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.6;
+    border: 1px solid;
+  }
+  .note-box.info { background: var(--blue-light); border-color: var(--blue-mid); color: var(--blue-dark); }
+  .note-box.success { background: var(--success-bg); border-color: #b7dfca; color: var(--success); }
+  .note-box.danger  { background: var(--danger-bg);  border-color: #f5c6cb; color: var(--danger); }
+
+  @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+  @keyframes spin   { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <a class="navbar-brand" href="#">
+    <div class="navbar-logo">JF</div>
+    <span class="navbar-title">Job<span>Guard</span></span>
+  </a>
+  <span class="navbar-badge">🤖 RF + TF-IDF Model</span>
+</nav>
+
+<!-- Page -->
+<div class="page">
+
+  <!-- Main Column -->
+  <div class="main-col">
+
+    <!-- Input Card -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <h2>Analyze a Job Posting</h2>
+        <p>Fill in the details from the job posting and paste the description below</p>
+      </div>
+      <div class="card-body">
+
+        <div class="grid-2">
+          <div class="field">
+            <label>Employment Type</label>
+            <select id="employment_type">
+              <option value="Unknown">Unknown / Not Specified</option>
+              <option value="Full-time">Full-time</option>
+              <option value="Part-time">Part-time</option>
+              <option value="Contract">Contract</option>
+              <option value="Temporary">Temporary</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Required Experience</label>
+            <select id="required_experience">
+              <option value="Not Applicable">Not Applicable</option>
+              <option value="Internship">Internship</option>
+              <option value="Entry level">Entry Level</option>
+              <option value="Mid-Senior level">Mid-Senior Level</option>
+              <option value="Director">Director</option>
+              <option value="Executive">Executive</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label>Required Education</label>
+            <select id="required_education">
+              <option value="Not Specified">Not Specified</option>
+              <option value="High School or equivalent">High School</option>
+              <option value="Some College Coursework Completed">Some College</option>
+              <option value="Associate Degree">Associate Degree</option>
+              <option value="Bachelor's Degree">Bachelor's Degree</option>
+              <option value="Master's Degree">Master's Degree</option>
+              <option value="Doctorate">Doctorate</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Industry</label>
+            <select id="industry">
+              <option value="Unknown">Unknown / Not Listed</option>
+              <option value="Information Technology and Services">IT & Services</option>
+              <option value="Hospital & Health Care">Healthcare</option>
+              <option value="Financial Services">Financial Services</option>
+              <option value="Marketing and Advertising">Marketing</option>
+              <option value="Staffing and Recruiting">Staffing & Recruiting</option>
+              <option value="Retail">Retail</option>
+              <option value="Education Management">Education</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Department <span>(optional)</span></label>
+          <select id="department">
+            <option value="Unknown">Unknown / Not Listed</option>
+            <option value="Engineering">Engineering</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Sales">Sales</option>
+            <option value="Human Resources">Human Resources</option>
+            <option value="Finance">Finance</option>
+            <option value="Operations">Operations</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="toggle-group">
+          <label class="toggle">
+            <input type="checkbox" id="has_company_logo" checked/>
+            <span class="knob"></span>
+            <span>Has Company Logo</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="telecommuting"/>
+            <span class="knob"></span>
+            <span>Remote / Telecommuting</span>
+          </label>
+        </div>
+
+        <div class="field">
+          <label>Job Description</label>
+          <textarea id="description" placeholder="Paste the full job description here — your model reads this text to detect fraud patterns..."></textarea>
+        </div>
+
+        <div class="field">
+          <label>Requirements <span>(optional but recommended)</span></label>
+          <textarea id="requirements" placeholder="Paste the job requirements or qualifications here..." style="min-height:90px"></textarea>
+        </div>
+
+        <button class="btn-primary" onclick="analyze()">Analyze Job Posting</button>
+
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Running your Random Forest + TF-IDF model...</p>
+    </div>
+
+    <!-- Result -->
+    <div class="result" id="result">
+
+      <!-- Verdict Banner -->
+      <div class="verdict-card" id="verdict-card">
+        <div class="verdict-icon" id="verdict-icon"></div>
+        <div class="verdict-text">
+          <h3 id="verdict-title"></h3>
+          <p id="verdict-sub"></p>
+        </div>
+      </div>
+
+      <!-- Confidence -->
+      <div class="conf-section">
+        <div class="conf-header">
+          <span>Fraud Probability Score</span>
+          <span class="conf-pct" id="conf-pct"></span>
+        </div>
+        <div class="bar-bg">
+          <div class="bar-fill" id="conf-bar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Structural Signals -->
+      <div class="conf-section">
+        <div class="section-title">Structural Signals</div>
+        <div class="signals-grid" id="signals"></div>
+      </div>
+
+      <!-- Red Flags -->
+      <div id="redflag-container"></div>
+
+      <!-- Summary note -->
+      <div class="note-box info" id="note"></div>
+
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+
+    <!-- Stats -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Dataset Stats</h2>
+        <p>Training data overview</p>
+      </div>
+      <div class="card-body">
+        <div class="stat-row" style="margin-bottom:12px">
+          <div class="stat-box">
+            <span class="num">10.4K</span>
+            <div class="lbl">Job postings</div>
+          </div>
+          <div class="stat-box">
+            <span class="num">4.5%</span>
+            <div class="lbl">Fraud rate</div>
+          </div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-box">
+            <span class="num">97%</span>
+            <div class="lbl">Accuracy</div>
+          </div>
+          <div class="stat-box">
+            <span class="num">500</span>
+            <div class="lbl">TF-IDF features</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="card tip-card">
+      <h4>⚠️ Common Fraud Signs</h4>
+      <ul class="tip-list">
+        <li>No company logo or vague company info</li>
+        <li>Promises high pay with no experience required</li>
+        <li>Asks for personal info upfront (SSN, bank details)</li>
+        <li>Requires payment for training or starter kit</li>
+        <li>Uses personal email (Gmail, Yahoo)</li>
+        <li>Guarantees job without interview</li>
+        <li>Vague or very short job description</li>
+        <li>Remote job with unrealistic earnings</li>
+      </ul>
+    </div>
+
+    <!-- How it works -->
+    <div class="card tip-card">
+      <h4>🔍 How It Works</h4>
+      <ul class="tip-list">
+        <li>Structured fields (industry, education, logo) are one-hot encoded</li>
+        <li>Description + requirements are analyzed with TF-IDF (500 features)</li>
+        <li>Both are combined and passed to a Random Forest classifier</li>
+        <li>Threshold tuned to 0.35 for better fraud recall</li>
+        <li>class_weight=balanced handles the imbalanced dataset</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<script>
+async function analyze() {
+  const employment_type     = document.getElementById('employment_type').value;
+  const required_education  = document.getElementById('required_education').value;
+  const required_experience = document.getElementById('required_experience').value;
+  const industry            = document.getElementById('industry').value;
+  const department          = document.getElementById('department').value;
+  const has_company_logo    = document.getElementById('has_company_logo').checked ? 1 : 0;
+  const telecommuting       = document.getElementById('telecommuting').checked ? 1 : 0;
+  const description         = document.getElementById('description').value.trim();
+  const requirements        = document.getElementById('requirements').value.trim();
+
+  if (!description) { alert('Please paste a job description first.'); return; }
+
+  document.getElementById('loading').classList.add('on');
+  document.getElementById('result').className = 'result';
+  document.querySelector('.btn-primary').disabled = true;
+
+  try {
+    const res = await fetch('http://127.0.0.1:5000/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        employment_type, required_education, required_experience,
+        industry, department, has_company_logo, telecommuting,
+        description, requirements
+      })
+    });
+
+    if (!res.ok) throw new Error('Server error ' + res.status);
+    const data = await res.json();
+
+    const signals = [
+      { label: has_company_logo ? 'Has company logo'      : 'No company logo',         status: has_company_logo ? 'ok'   : 'bad'  },
+      { label: telecommuting    ? 'Remote position'       : 'On-site position',         status: telecommuting    ? 'warn' : 'ok'   },
+      { label: required_education === 'Not Specified'   ? 'Education not specified'  : 'Education level provided', status: required_education === 'Not Specified' ? 'warn' : 'ok' },
+      { label: required_experience === 'Not Applicable' ? 'Experience not specified' : 'Experience level provided', status: required_experience === 'Not Applicable' ? 'warn' : 'ok' },
+      { label: industry === 'Unknown'   ? 'Industry not listed'  : 'Industry provided',  status: industry === 'Unknown'   ? 'bad'  : 'ok'  },
+      { label: description.length > 200 ? 'Detailed description' : 'Vague description',  status: description.length > 200 ? 'ok'   : 'bad' },
+      { label: requirements.length > 50 ? 'Requirements listed'  : 'No requirements',    status: requirements.length > 50 ? 'ok'   : 'warn'},
+    ];
+
+    showResult({
+      verdict:           data.verdict,
+      fraud_probability: data.fraud_probability,
+      signals,
+      redFlags: analyzeRedFlags(description, requirements),
+      summary: data.verdict === 'FRAUDULENT'
+        ? 'Your Random Forest + TF-IDF model flagged this posting as likely fraudulent.'
+        : 'Your Random Forest + TF-IDF model classified this posting as likely legitimate.'
+    });
+
+  } catch (err) {
+    alert('Could not connect to Flask server.\n\nMake sure app.py is running:\n  python3 app.py\n\nThen open http://127.0.0.1:5000');
+    console.error(err);
+  } finally {
+    document.getElementById('loading').classList.remove('on');
+    document.querySelector('.btn-primary').disabled = false;
+  }
+}
+
+function analyzeRedFlags(description, requirements) {
+  const text = (description + ' ' + requirements).toLowerCase();
+  const found = [];
+  const patterns = [
+    { regex: /no experience (required|needed)|no skills required/i,            label: 'Claims no experience needed'           },
+    { regex: /\$\d{3,}[\s,]*(?:per|\/)\s*(?:day|hour|week)|earn.*\$\d{4,}/i,  label: 'Unrealistic pay promises'              },
+    { regex: /send (your )?(ssn|social security|passport|bank account|id number)/i, label: 'Asks for personal / financial info'},
+    { regex: /wire transfer|western union|moneygram|gift card/i,               label: 'Suspicious payment method mentioned'   },
+    { regex: /training fee|registration fee|starter kit|upfront (cost|fee)/i,  label: 'Asks for upfront payment'             },
+    { regex: /multi.?level|mlm|downline|recruit (others|friends|family)/i,     label: 'Possible MLM / pyramid scheme'        },
+    { regex: /urgent(ly)?|immediate(ly)?|limited (spots?|positions?|time)/i,   label: 'Creates urgency / limited spots'      },
+    { regex: /gmail\.com|yahoo\.com|hotmail\.com|outlook\.com/i,               label: 'Uses personal email domain'           },
+    { regex: /guarante(e|d) (income|job|employment|salary)/i,                  label: 'Guarantees income or employment'      },
+    { regex: /no (interview|background check|drug test)/i,                     label: 'Skips standard hiring process'        },
+    { regex: /mystery shopper|secret shopper/i,                                label: 'Mystery shopper scam pattern'         },
+    { regex: /be your own boss|financial freedom|passive income/i,             label: 'Vague "financial freedom" language'   },
+    { regex: /work from home|set your own hours|anywhere in the world/i,       label: 'Vague remote work promises'           },
+    { regex: /click (here|this link)|visit our website to apply/i,             label: 'Suspicious external link prompt'      },
+  ];
+  for (const p of patterns) {
+    if (p.regex.test(text)) found.push(p.label);
+  }
+  if (description.length < 100) found.push('Very short / vague description');
+  if (requirements.length < 30)  found.push('No clear requirements listed');
+  return found;
+}
+
+function showResult(r) {
+  const isFraud = r.verdict === 'FRAUDULENT';
+
+  // Verdict card
+  const vc = document.getElementById('verdict-card');
+  vc.className = 'verdict-card ' + (isFraud ? 'fraud' : 'legit');
+  document.getElementById('verdict-icon').textContent  = isFraud ? '⚠️' : '✅';
+  document.getElementById('verdict-title').textContent = isFraud ? 'Likely Fraudulent' : 'Likely Legitimate';
+  document.getElementById('verdict-sub').textContent   = `${r.fraud_probability}% fraud probability · Random Forest + TF-IDF`;
+
+  // Confidence bar
+  const pctEl = document.getElementById('conf-pct');
+  pctEl.textContent = r.fraud_probability + '%';
+  pctEl.className = 'conf-pct ' + (isFraud ? 'fraud-pct' : 'legit-pct');
+  const bar = document.getElementById('conf-bar');
+  bar.className = 'bar-fill ' + (isFraud ? 'bar-fraud' : 'bar-legit');
+  setTimeout(() => { bar.style.width = r.fraud_probability + '%'; }, 80);
+
+  // Structural signals
+  document.getElementById('signals').innerHTML = (r.signals || []).map(s =>
+    `<div class="signal-chip ${s.status}"><span class="dot dot-${s.status}"></span>${s.label}</div>`
+  ).join('');
+
+  // Red flags
+  const redFlags = r.redFlags || [];
+  let rfHTML = '';
+  if (redFlags.length > 0) {
+    rfHTML = `
+      <div class="redflag-section">
+        <div class="redflag-title">
+          ⚠️ Red Flags Detected in Text
+          <span class="redflag-count">${redFlags.length}</span>
+        </div>
+        <div class="redflag-list">
+          ${redFlags.map(f => `
+            <div class="redflag-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              ${f}
+            </div>`).join('')}
+        </div>
+      </div>`;
+  } else if (!isFraud) {
+    rfHTML = `<div class="note-box success" style="margin-bottom:12px">✅ No red flag keywords detected in the job text.</div>`;
+  } else {
+    rfHTML = `<div class="note-box danger" style="margin-bottom:12px">⚠️ Model detected fraud via learned text patterns — no simple keyword red flags found but the text still appears suspicious.</div>`;
+  }
+  document.getElementById('redflag-container').innerHTML = rfHTML;
+  document.getElementById('note').textContent = `ℹ️ ${r.summary} Always research the company independently before applying or sharing personal information.`;
+
+  document.getElementById('result').className = 'result on';
+}
+</script>
+</body>
+</html>
