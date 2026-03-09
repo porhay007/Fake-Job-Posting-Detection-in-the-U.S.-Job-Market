@@ -7,191 +7,152 @@
 
 ---
 
-# Project Overview
+## Project Overview
 
-Fraudulent job postings have become increasingly common in online job platforms. These scams often target job seekers with misleading opportunities, fake company information, or attempts to collect personal and financial data.
+Fraudulent job postings have become increasingly common in online U.S. job platforms, targeting job seekers with fake promises, identity theft, and financial scams. This project builds an end-to-end machine learning pipeline to automatically classify job postings as **legitimate or fraudulent**.
 
-This project analyzes job posting data to understand the characteristics of fraudulent job listings and explores how different job attributes relate to the likelihood of fraud. Through data preprocessing and exploratory data analysis (EDA), the project identifies patterns and insights that may help detect fraudulent job postings.
+The pipeline combines:
 
----
-
-# Problem Statement
-
-Fraudulent job postings are increasingly common in the U.S., targeting job seekers with fake promises, scams, or identity theft. These postings waste applicants’ time, can cause financial loss, and harm the credibility of online job platforms.
-
-This project aims to:
-
-- Examine characteristics of fraudulent postings
-- Explore relationships between structured and textual job features
-- Prepare features for building predictive models capable of classifying job postings as real or fraudulent
+- **Structured features** (employment type, industry, company logo, etc.) via one-hot encoding
+- **Text features** (job description + requirements) via TF-IDF vectorization
+- **XGBoost classifier** selected after comparing 3 models
 
 ---
 
-# Dataset
+## Problem Statement
 
-The dataset used in this project is publicly available on Kaggle.
+Fraudulent job postings waste applicants' time, cause financial harm, and erode trust in online job platforms. This project aims to:
 
-Fake Job Postings Dataset:  
-https://www.kaggle.com/datasets/shivamb/real-or-fake-fake-jobposting-prediction
-
-The dataset contains job postings collected from online platforms and includes both legitimate and fraudulent listings. It contains both structured attributes and textual descriptions of job postings.
-
-Example features include:
-
-- Job title
-- Location
-- Employment type
-- Industry
-- Department
-- Salary range
-- Job description
-- Job requirements
-- Fraud label (0 = Real, 1 = Fraudulent)
+- Examine characteristics that distinguish fraudulent postings from legitimate ones
+- Build a predictive ML model using both structured and textual features
 
 ---
 
-# Technologies Used
+## Dataset
 
-This project uses the following tools and technologies:
+**Source:** Kaggle — Real / Fake Job Posting Prediction  
+**URL:** https://www.kaggle.com/datasets/shivamb/real-or-fake-fake-jobposting-prediction
 
-- Python
-- Pandas
-- NumPy
-- Matplotlib
-- Seaborn
-- SQLite
-- Jupyter Notebook
+| Detail            | Value                               |
+| ----------------- | ----------------------------------- |
+| Original size     | 17,880 postings                     |
+| After U.S. filter | 10,656 postings                     |
+| Legitimate        | 9,926 (93.1%)                       |
+| Fraudulent        | 730 (6.9%)                          |
+| Storage           | SQLite database (`job_postings.db`) |
 
-SQLite is used as a relational database to store and query the dataset, which supports the SQL component of the project.
+**Key features used:**
 
----
-
-# Data Preprocessing
-
-Several preprocessing steps were performed before conducting analysis:
-
-### Data Cleaning
-
-- Handling missing values
-- Removing duplicate records
-- Replacing missing categorical values with "Unknown"
-
-### Feature Selection
-
-Selected relevant columns for analysis including:
-
-- title
-- location
-- employment_type
-- industry
-- department
-- salary_range
-- description
-- requirements
-- fraudulent
-
-### Data Storage
-
-The dataset was stored in a SQLite database to allow structured SQL queries and relational data management.
+| Feature               | Type          |
+| --------------------- | ------------- |
+| `employment_type`     | Categorical   |
+| `industry`            | Categorical   |
+| `department`          | Categorical   |
+| `required_education`  | Categorical   |
+| `required_experience` | Categorical   |
+| `has_company_logo`    | Binary        |
+| `telecommuting`       | Binary        |
+| `description`         | Text (TF-IDF) |
+| `requirements`        | Text (TF-IDF) |
+| `fraudulent`          | Target (0/1)  |
 
 ---
 
-# Exploratory Data Analysis (EDA)
+## Technologies Used
 
-Exploratory analysis was conducted to understand patterns in the dataset.
-
-### Distribution Analysis
-
-The distribution of fraudulent vs legitimate job postings was analyzed. The dataset is highly imbalanced, with far fewer fraudulent postings compared to legitimate ones.
-
-### Feature Relationships
-
-Relationships between several job attributes and fraud labels were explored, including:
-
-- Telecommuting vs Fraud
-- Company Logo vs Fraud
-- Required Education vs Fraud
-
-### Correlation Analysis
-
-A correlation matrix was generated to examine relationships among numeric features and their potential association with fraudulent postings.
+- **Python** — pandas, numpy, scikit-learn, xgboost, joblib, scipy
+- **NLP** — TF-IDF Vectorization (500 features, bigrams)
+- **Database** — SQLite (relational DB bonus component)
+- **Web** — Flask API, HTML/CSS/JavaScript
+- **Visualization** — Matplotlib, Seaborn
+- **Notebook** — Jupyter Notebook
 
 ---
 
-# Preliminary Findings
-
-From the exploratory analysis, several patterns emerge:
-
-- Fraudulent job postings often contain less detailed information
-
-- Some industries appear more frequently in fraudulent listings
-
-- Fraud detection datasets are highly imbalanced
-
-- Missing or vague job descriptions may indicate suspicious postings
-
-## These insights will guide feature engineering and model development in the next phase.
-
-# Project Structure
+## Project Structure
 
 ```
-Group Project/
+Group_Project/
 │
 ├── Data/
-│ └── fake_job_postings.csv
+│   └── fake_job_postings.csv
 │
 ├── Coding/
-│ ├── Index.ipynb
-│ └── job_postings.db
+│   ├── Index.ipynb              ← Main notebook (full pipeline)
+│   └── job_postings.db          ← SQLite database
 │
+├── Requirements.txt
 └── README.md
 ```
 
 ---
 
-# Next Steps
+## Methodology
 
-The remaining tasks for the project include:
+### 1. Data Preprocessing
 
-## Remaining Data Processing
+- Filtered to **U.S. postings only** (`location` contains `'US'`)
+- Filled missing categorical values with `'Unknown'` / `'Not Specified'`
+- Removed 203 duplicate records
+- Stored in **SQLite** for structured SQL querying
 
-- Additional feature engineering
+### 2. Feature Engineering
 
-- Text feature extraction from job descriptions and requirements
+- **Structured features** → `pd.get_dummies()` → 878 columns
+- **Text features** → TF-IDF on `description + requirements` → 500 columns
+- **Combined** → `scipy.sparse.hstack` → 1,378 total features
 
-## Modeling
+### 3. Modeling
 
-- Build classification models such as:
+Three models were trained and compared:
 
-  - Logistic Regression
+| Model               | Accuracy | Fraud Precision | Fraud Recall | Fraud F1 |
+| ------------------- | -------- | --------------- | ------------ | -------- |
+| Random Forest       | 97%      | 100%            | 53%          | 0.69     |
+| Logistic Regression | 94%      | 53%             | 91%          | 0.67     |
+| **XGBoost** ⭐      | **97%**  | **87%**         | **75%**      | **0.80** |
 
-  - Random Forest
+**XGBoost was selected** as the final model — best balance of precision and recall, highest Fraud F1-score.
 
-  - Decision Trees
+### 4. Model Configuration
 
-## Evaluation
-
-Models will be evaluated using:
-
-- Accuracy
-
-- Precision
-
-- Recall
-
-- F1-score
-
-## Documentation
-
-- Prepare final report
-
-- Create presentation slides
-
-- Document code and results
+```python
+XGBClassifier(
+    n_estimators=100,
+    scale_pos_weight=13,   # handles 93/7 class imbalance
+    random_state=42,
+    eval_metric='logloss',
+    n_jobs=-1
+)
+# Decision threshold tuned to 0.35 for better fraud recall
+# 5-fold stratified cross-validation used for evaluation
+```
 
 ---
 
-# References
+## Key Findings
 
-Fake Job Postings Dataset  
-https://www.kaggle.com/datasets/shivamb/real-or-fake-fake-jobposting-prediction
+- **Company logo presence** is the strongest single structured predictor — fraudulent postings rarely include a logo
+- **TF-IDF text features** significantly improved fraud recall over structured features alone
+- **XGBoost** outperformed Random Forest (F1: 0.80 vs 0.69) and Logistic Regression (F1: 0.80 vs 0.67)
+- **Threshold tuning to 0.35** improved fraud detection recall beyond the default 0.5
+
+---
+
+## Challenges
+
+| Challenge                                 | Solution                                                 |
+| ----------------------------------------- | -------------------------------------------------------- |
+| Class imbalance (93% legit / 7% fraud)    | `scale_pos_weight=13` + threshold tuning                 |
+| Low recall on fraud (Random Forest = 53%) | Switched to XGBoost + added TF-IDF text features         |
+| `scipy` dtype error with object columns   | Applied `.astype(float)` before `csr_matrix`             |
+| CORS error when opening HTML directly     | Served interface through Flask via `send_from_directory` |
+
+---
+
+## References
+
+- Bansal, S. (2020). _Real / Fake Job Posting Prediction_. Kaggle. https://www.kaggle.com/datasets/shivamb/real-or-fake-fake-jobposting-prediction
+- Pedregosa, F., et al. (2011). Scikit-learn: Machine Learning in Python. _JMLR_, 12, 2825–2830.
+- Chen, T., & Guestrin, C. (2016). XGBoost: A Scalable Tree Boosting System. _KDD '16_.
+- Bird, S., Klein, E., & Loper, E. (2009). _Natural Language Processing with Python_. O'Reilly Media.
